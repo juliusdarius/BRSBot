@@ -11,24 +11,24 @@ load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 GUILD = os.getenv('DISCORD_GUILD')
 
-# client = discord.Client()
+client = discord.Client()
 
 bot = commands.Bot(command_prefix='!')
 
-# @client.event
-# async def on_ready():
+@client.event
+async def on_ready():
 
-#     guild = discord.utils.get(client.guilds, name=GUILD)
-#     await client.change_presence(activity=discord.Game(name='Searching for Pip'))
+    guild = discord.utils.get(client.guilds, name=GUILD)
+    await client.change_presence(activity=discord.Game(name='Searching for Pip'))
 
-#     if guild:
-#         print(
-#             f'{client.user} is connected to the following guild:\n'
-#             f'{guild.name}(id: {guild.id})'
-#         )
+    if guild:
+        print(
+            f'{client.user} is connected to the following guild:\n'
+            f'{guild.name}(id: {guild.id})'
+        )
 
-#         members = '\n - '.join([member.name for member in guild.members])
-#         print(f'Guild Members:\n - {members}')
+        members = '\n - '.join([member.name for member in guild.members])
+        print(f'Guild Members:\n - {members}')
 
 
 # @client.event
@@ -70,33 +70,39 @@ bot = commands.Bot(command_prefix='!')
 #                 await message.channel.send(f'{member} does not have a nickname')
 
 
-# @client.event
-# async def on_message(message):
-#     if message.author == client.user:
-#         return
+@client.event
+async def on_message(message):
+    if message.author == client.user:
+        return
 
-#     guild = discord.utils.get(client.guilds, name = GUILD)
+    guild = discord.utils.get(client.guilds, name = GUILD)
 
-#     if 'user activities' in message.content.lower():
-#         members = [[member, member.activities] for member in guild.members]
-#         for member,activity in members:
-#             if activity:
-#                 # await message.channel.send(f'{member.nick} is doing: {activity}')
-#                 print(f'{member.nick} is doing: {activity}')
-#                 print(type(activity))
+    if 'user activities' in message.content.lower():
+        members = [[member, member.activities] for member in guild.members]
+        for member,activity in members:
+            if activity:
+                # await message.channel.send(f'{member.nick} is doing: {activity}')
+                print(f'{member.nick} is doing: {activity}')
+                print(type(activity))
 
 
 @bot.command(name = 'teamgen')
-async def team_gen(ctx, teams, channels):
-    teams = teams.split(',')
-    print(channels)
-    channels = channels.split(',')
+async def team_gen(ctx, *teams):
+    teams = list(teams)
+    guild = discord.utils.get(bot.guilds, name = GUILD)
+
+    channels = []
+    channel_ids = []
+    for channel in guild.channels:
+        if (channel.type == discord.ChannelType.voice) and ('scrim' in channel.name.lower()):
+            channels.append(channel.name)
+            channel_ids.append(channel.id)
 
     if len(teams) % 2 == 0:
         random.shuffle(teams)
         team1 = teams[:(len(teams) // 2)]
         team2 = teams[len(teams) //2:]
-        print(team1, team2)
+        # print(team1, team2)
     else:
         random.shuffle(teams)
         x = len(teams) // 2
@@ -105,17 +111,29 @@ async def team_gen(ctx, teams, channels):
         random.shuffle(lens)
         team1 = teams[:lens[0]]
         team2 = teams[lens[0]:]
-        print(team1,team2)
+        # print(team1,team2)
 
     t1 = '\n'.join(['- ' + x for x in team1])
     t2 = '\n'.join(['- ' + x for x in team2])
 
-    print(channels)
-    await ctx.send(f"Team 1 in Channel {channels[0]}:\n{t1}\n\nTeam 2 in Channel {channels[1]}:\n{t2}")
+    await ctx.send(f"Team 1 in {channels[0]}:\n{t1}\n\nTeam 2 in {channels[-1]}:\n{t2}")
+
+    t1_ids = [int(''.join(x for x in i if x.isdigit())) for i in team1]
+    t2_ids = [int(''.join(x for x in i if x.isdigit())) for i in team2]
+    teams = [t1_ids,t2_ids]
+    # print(t1_ids,t2_ids)
+    # print(channel_ids)
+
+    for team, channel_id in zip(teams,channel_ids):
+        channel = bot.get_channel(channel_id)
+        for id_ in team:
+            member = guild.get_member(id_)
+            if member is not None:
+                await member.move_to(channel)
 
 @bot.command(name = 'test')
-async def team_gen(ctx):
+async def test(ctx):
     await ctx.send('Yea yea, I hear you')
 
-# client.run(TOKEN)
+
 bot.run(TOKEN)

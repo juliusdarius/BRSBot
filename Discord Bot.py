@@ -88,6 +88,8 @@ async def on_message(message):
 
 @bot.command(name = 'teamgen')
 async def team_gen(ctx, *teams):
+#TODO: Get the current list of members in the CoD voice server and then move only the members of that channel
+#TODO: Pull from Scrim team 1 and 2 to get the teamlist for reshuffle
     teams = list(teams)
     guild = discord.utils.get(bot.guilds, name = GUILD)
 
@@ -97,6 +99,10 @@ async def team_gen(ctx, *teams):
         if (channel.type == discord.ChannelType.voice) and ('scrim' in channel.name.lower()):
             channels.append(channel.name)
             channel_ids.append(channel.id)
+
+    cod_channel = discord.utils.get(guild.channels, name = 'CALL OF DUTY')
+    print([x.id for x in cod_channel.members])
+    teams = [str(x.id) for x in cod_channel.members]
 
     if len(teams) % 2 == 0:
         random.shuffle(teams)
@@ -113,16 +119,16 @@ async def team_gen(ctx, *teams):
         team2 = teams[lens[0]:]
         # print(team1,team2)
 
-    t1 = '\n'.join(['- ' + x for x in team1])
-    t2 = '\n'.join(['- ' + x for x in team2])
+    print(team1,team2)
+    t1 = '\n'.join([f'- <@!{x}>' for x in team1])
+    t2 = '\n'.join([f'- <@!{x}>' for x in team2])
 
     await ctx.send(f"Team 1 in {channels[0]}:\n{t1}\n\nTeam 2 in {channels[-1]}:\n{t2}")
 
     t1_ids = [int(''.join(x for x in i if x.isdigit())) for i in team1]
     t2_ids = [int(''.join(x for x in i if x.isdigit())) for i in team2]
+
     teams = [t1_ids,t2_ids]
-    # print(t1_ids,t2_ids)
-    # print(channel_ids)
 
     for team, channel_id in zip(teams,channel_ids):
         channel = bot.get_channel(channel_id)

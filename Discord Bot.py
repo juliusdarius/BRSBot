@@ -87,10 +87,10 @@ async def on_message(message):
 
 
 @bot.command(name = 'teamgen')
-async def team_gen(ctx, *teams):
+async def team_gen(ctx):
 #TODO: Get the current list of members in the CoD voice server and then move only the members of that channel
 #TODO: Pull from Scrim team 1 and 2 to get the teamlist for reshuffle
-    teams = list(teams)
+    # teams = list(teams)
     guild = discord.utils.get(bot.guilds, name = GUILD)
 
     channels = []
@@ -108,7 +108,6 @@ async def team_gen(ctx, *teams):
         random.shuffle(teams)
         team1 = teams[:(len(teams) // 2)]
         team2 = teams[len(teams) //2:]
-        # print(team1, team2)
     else:
         random.shuffle(teams)
         x = len(teams) // 2
@@ -117,9 +116,54 @@ async def team_gen(ctx, *teams):
         random.shuffle(lens)
         team1 = teams[:lens[0]]
         team2 = teams[lens[0]:]
-        # print(team1,team2)
 
-    print(team1,team2)
+    t1 = '\n'.join([f'- <@!{x}>' for x in team1])
+    t2 = '\n'.join([f'- <@!{x}>' for x in team2])
+
+    await ctx.send(f"Team 1 in {channels[0]}:\n{t1}\n\nTeam 2 in {channels[-1]}:\n{t2}")
+
+    t1_ids = [int(''.join(x for x in i if x.isdigit())) for i in team1]
+    t2_ids = [int(''.join(x for x in i if x.isdigit())) for i in team2]
+
+    teams = [t1_ids,t2_ids]
+
+    for team, channel_id in zip(teams,channel_ids):
+        channel = bot.get_channel(channel_id)
+        for id_ in team:
+            member = guild.get_member(id_)
+            if member is not None:
+                await member.move_to(channel)
+
+
+@bot.command(name = 'shuffle_teams')
+async def reshuffle_teams(ctx):
+#TODO: Pull from Scrim team 1 and 2 to get the teamlist for reshuffle
+    guild = discord.utils.get(bot.guilds, name = GUILD)
+    channels = []
+    channel_ids = []
+    teams = []
+    for channel in guild.channels:
+        if (channel.type == discord.ChannelType.voice) and ('scrim' in channel.name.lower()):
+            channels.append(channel.name)
+            channel_ids.append(channel.id)
+            teams.extend([str(x.id) for x in channel.members])
+
+    if len(teams) == 0:
+        return
+
+    if len(teams) % 2 == 0:
+        random.shuffle(teams)
+        team1 = teams[:(len(teams) // 2)]
+        team2 = teams[len(teams) //2:]
+    else:
+        random.shuffle(teams)
+        x = len(teams) // 2
+        y = (len(teams) // 2) + 1
+        lens = [x,y]
+        random.shuffle(lens)
+        team1 = teams[:lens[0]]
+        team2 = teams[lens[0]:]
+
     t1 = '\n'.join([f'- <@!{x}>' for x in team1])
     t2 = '\n'.join([f'- <@!{x}>' for x in team2])
 

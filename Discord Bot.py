@@ -15,15 +15,15 @@ client = discord.Client()
 
 bot = commands.Bot(command_prefix='!')
 
-@client.event
+@bot.event
 async def on_ready():
 
-    guild = discord.utils.get(client.guilds, name=GUILD)
-    await client.change_presence(activity=discord.Game(name='Searching for Pip'))
+    guild = discord.utils.get(bot.guilds, name=GUILD)
+    await bot.change_presence(activity=discord.Game(name='Searching for Pip'))
 
     if guild:
         print(
-            f'{client.user} is connected to the following guild:\n'
+            f'{bot.user} is connected to the following guild:\n'
             f'{guild.name}(id: {guild.id})'
         )
 
@@ -31,51 +31,35 @@ async def on_ready():
         print(f'Guild Members:\n - {members}')
 
 
-# @client.event
-# async def on_member_join(member):
-#     await member.create_dm()
-#     await member.dm_channel.send(f'Hi {member.name}, welcome to PALS 4 LIFE! Please enjoy your stay!')
+@bot.event
+async def on_member_join(member):
+    await member.create_dm()
+    await member.dm_channel.send(f'Hi {member.name}, welcome to PALS 4 LIFE! Please enjoy your stay!')
 
 
-# @client.event
-# async def on_message(message):
-#     if message.author == client.user:
-#         return
-    
-#     guild = discord.utils.get(client.guilds, name=GUILD)
-#     game_time =["Better toggle off","Sounds like someone needs to get better at the game...","Don't hate the player, hate the game","Gotta play with the best to become the best"]
-
-#     print(message.content, type(message.content))
-#     members = [[member.nick,member.name] for member in guild.members]
-#     print(members)
-
-#     if ('hack' in message.content.lower()):
-#         response = random.choice(game_time)
-#         await message.channel.send(response)
-
-
-# @client.event
-# async def on_message(message):
-#     if message.author == client.user:
-#         return
-
-#     guild= discord.utils.get(client.guilds, name = GUILD)
-
-#     if 'user nicknames' in message.content.lower():
-#         members = [[member.name, member.nick] for member in guild.members]
-#         for member,nick in members:
-#             if nick is not None:
-#                 await message.channel.send(f'{member} goes by the nickname {nick}')
-#             else:
-#                 await message.channel.send(f'{member} does not have a nickname')
-
-
-@client.event
+@bot.event
 async def on_message(message):
-    if message.author == client.user:
+    if message.author == bot.user:
+        return
+    
+    guild = discord.utils.get(bot.guilds, name=GUILD)
+    game_time =["Better toggle off","Sounds like someone needs to get better at the game...","Don't hate the player, hate the game","Gotta play with the best to become the best"]
+
+    print(message.content, type(message.content))
+    members = [[member.nick,member.name] for member in guild.members]
+    print(members)
+
+    if ('hack' in message.content.lower()):
+        response = random.choice(game_time)
+        await message.channel.send(response)
+
+
+@bot.event
+async def on_message(message):
+    if message.author == bot.user:
         return
 
-    guild = discord.utils.get(client.guilds, name = GUILD)
+    guild = discord.utils.get(bot.guilds, name = GUILD)
 
     if 'user activities' in message.content.lower():
         members = [[member, member.activities] for member in guild.members]
@@ -181,9 +165,19 @@ async def reshuffle_teams(ctx):
             if member is not None:
                 await member.move_to(channel)
 
+
 @bot.command(name = 'test')
 async def test(ctx):
     await ctx.send('Yea yea, I hear you')
+
+
+@bot.command(name = 'channels')
+async def channels(ctx):
+    guild = discord.utils.get(bot.guilds, name = GUILD)
+
+    for channel in guild.channels:
+        if (channel.type == discord.ChannelType.voice):
+            await ctx.send(f"Name: {channel.name}\nEncoded Name: {channel.name.encode()}")
 
 
 bot.run(TOKEN)

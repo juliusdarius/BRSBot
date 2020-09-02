@@ -3,14 +3,19 @@ import os
 import discord 
 from discord.ext import commands
 from dotenv import load_dotenv
+import psycopg2
+from psycopg2 import pool
 import random
-import re
-import json
 
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 GUILD = os.getenv('DISCORD_GUILD')
+USER = os.getenv('POSTGRESQL_USER')
+PASSWORD = os.getenv('POSTGRESQL_PASSWORD')
+POSTGRESQL_HOST = os.getenv('POSTGRESQL_HOST')
+POSTGRESQL_PORT = os.getenv('POSTGRESQL_PORT')
+
 
 client = discord.Client()
 
@@ -19,6 +24,20 @@ bot = commands.Bot(command_prefix='!')
 last_team = None
 
 team_names = ['Allegiance','Coalition']
+
+
+
+db = psycopg2.pool.SimpleConnectionPool(
+    1,
+    20,
+    user = USER,
+    password = PASSWORD,
+    host = POSTGRESQL_HOST,
+    port = POSTGRESQL_PORT,
+    database = 'BRSBotDB'
+)
+
+
 
 @bot.event
 async def on_ready():

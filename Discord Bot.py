@@ -26,17 +26,11 @@ last_team = None
 team_names = ['Allegiance','Coalition']
 
 
-
-db = psycopg2.pool.SimpleConnectionPool(
-    1,
-    20,
-    user = USER,
-    password = PASSWORD,
-    host = POSTGRESQL_HOST,
-    port = POSTGRESQL_PORT,
-    database = 'BRSBotDB'
-)
-
+@bot.command(name = 'server')
+async def brs_server(ctx):
+    server_ip = '173.199.88.50:28960'
+    server_name = 'iONEi | BOLTS ONLY | EASTCOAST #1'
+    await ctx.send(f'Join us in Call of Duty World at War!\nServer IP: {server_ip}\nServer Name: {server_name}')
 
 
 @bot.event

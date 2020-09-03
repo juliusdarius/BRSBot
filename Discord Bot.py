@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 import psycopg2
 from psycopg2 import pool
 import random
+from contextlib import contextmanager
 
 
 load_dotenv()
@@ -24,6 +25,31 @@ bot = commands.Bot(command_prefix='!')
 last_team = None
 
 team_names = ['Allegiance','Coalition']
+
+# try:
+#     conn = psycopg2.connect(user = USER, password = PASSWORD, host = POSTGRESQL_HOST, port = POSTGRESQL_PORT, database = 'BRSBotDB')
+#     cursor = conn.cursor()
+# except Exception as e:
+#     print(e)
+
+
+# @bot.event
+# async def on_message(message):
+#     if message.author == bot.user:
+#         return
+
+    
+#     author_id = str(message.author.id)
+#     guild_id = str(message.guild.id)
+#     print(message.content,author_id,guild_id)
+
+#     cursor.execute("SELECT * FROM level_system WHERE user_id = %s AND guild_id = %s", (author_id, guild_id))
+#     user = cursor.fetchall()
+#     print(user)
+#     if not user:
+#         cursor.execute("INSERT INTO level_system (user_id,guild_id,level,xp) VALUES (%s,%s,1,0)", (author_id,guild_id))
+    
+#     conn.commit()
 
 
 @bot.command(name = 'server')
@@ -218,5 +244,80 @@ async def send_bunker_map(ctx, *bunker_num):
         await ctx.send(file = discord.File('Bunkers.png'))
 
 
+
+class Levels(commands.Cog):
+
+    def __init__(self, bot):
+        self.bot = bot
+        load_dotenv()
+        USER = os.getenv('POSTGRESQL_USER')
+        PASSWORD = os.getenv('POSTGRESQL_PASSWORD')
+        POSTGRESQL_HOST = os.getenv('POSTGRESQL_HOST')
+        POSTGRESQL_PORT = os.getenv('POSTGRESQL_PORT')
+        self.db_connection = pool.SimpleConnectionPool(1,10,user = USER, password = PASSWORD, host = POSTGRESQL_HOST, port = POSTGRESQL_PORT, database = 'BRSBotDB')
+
+
+    @contextmanager
+    def get_cursor(self):
+        conn = self.db_connection.getconn()
+        try:
+            yield conn.cursor()
+            conn.commit()
+        finally:
+            self.db_connection.putconn(conn)
+
+
+    def level_up(self, user):
+        curr_xp = user[-1]
+        curr_level = user[-2]
+
+        if curr_xp >= round((4*(curr_level**3)) / 5):
+            with self.get_cursor() as cursor:
+                cursor.execute("UPDATE level_system SET level = %s WHERE user_id = %s AND guild_id = %s", (user[-2]+1, user[0], user[1]))
+            return True
+        else:
+            return False
+
+    @commands.Cog.listener()
+    async def on_message(self, message):
+        if message.author == bot.user:
+            return
+
+        author_id = str(message.author.id)
+        guild_id = str(message.guild.id)
+
+        with self.get_cursor() as cursor:
+            cursor.execute("SELECT * FROM level_system WHERE user_id = %s AND guild_id = %s", (author_id, guild_id))
+            user = cursor.fetchall()
+            # print(user)
+            if (not user) or (user is None):
+                cursor.execute("INSERT INTO level_system (user_id,guild_id,level,xp) VALUES (%s,%s,1,0)", (author_id,guild_id))
+            cursor.execute("SELECT * FROM level_system WHERE user_id = %s AND guild_id = %s", (author_id, guild_id))
+            user = cursor.fetchone()
+            # print(user)
+            new_xp = user[-1]+1
+            cursor.execute("UPDATE level_system SET xp = %s WHERE user_id = %s AND guild_id = %s", (new_xp, author_id, guild_id))
+
+        if self.level_up(user):
+            await message.channel.send(f'{message.author.mention} is now level {user[-2]+1}')
+        
+
+    @commands.command()
+    async def level(self,ctx,member: discord.Member = None):
+        member = ctx.author if not member else member
+        member_id = str(member.id)
+        guild_id = str(ctx.guild.id)
+
+        with self.get_cursor() as cursor:
+            cursor.execute("SELECT * FROM level_system WHERE user_id = %s AND guild_id = %s", (member_id, guild_id))
+            user = cursor.fetchall()
+
+        if not user:
+            await ctx.send('Member does not have a level')
+        else:
+            embed = discord.Embed(color = member.color, timestamp=ctx.message.created_at)
+
+
+bot.add_cog(Levels(bot))
 
 bot.run(TOKEN)

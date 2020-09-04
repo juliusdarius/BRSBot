@@ -310,12 +310,16 @@ class Levels(commands.Cog):
 
         with self.get_cursor() as cursor:
             cursor.execute("SELECT * FROM level_system WHERE user_id = %s AND guild_id = %s", (member_id, guild_id))
-            user = cursor.fetchall()
+            user = cursor.fetchone()
 
         if not user:
             await ctx.send('Member does not have a level')
         else:
             embed = discord.Embed(color = member.color, timestamp=ctx.message.created_at)
+            embed.set_author(name=f'User - {member}', icon_url=self.bot.user.avatar_url)
+            embed.add_field(name='Level', value=user[-2])
+            embed.add_field(name='XP', value=user[-1])
+            await ctx.send(embed=embed)
 
 
 bot.add_cog(Levels(bot))

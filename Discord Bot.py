@@ -330,7 +330,7 @@ class kill(commands.Cog):
         self.bot = bot
 
     @commands.command()
-    async def kill_user(self, ctx, member:discord.Member = 340221274431160330):
+    async def kill(self, ctx, member:discord.Member = 340221274431160330):
         member = member if member == 340221274431160330 else member.id
         deaths = [
             'got run over by a car',

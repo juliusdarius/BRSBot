@@ -297,7 +297,7 @@ class Levels(commands.Cog):
             embed.add_field(name='XP', value=user[-1])
             # channel = self.bot.get_channel(id=752711588586455110)
             sent = await ctx.channel.send(embed=embed)
-            # await self.bot.add_reaction(sent, emoji = '\U0001f44d')
+            await sent.add_reaction(emoji = '\U0001f44d')
 
 
 
@@ -322,7 +322,7 @@ class welcome(commands.Cog):
             embed.set_thumbnail(url=f'{member.avatar_url}')
             channel = self.bot.get_channel(id=745331089375101036)
             sent = await channel.send(embed=embed)
-            await self.bot.add_reaction(sent, emoji = '\U0001f44d')
+            await sent.add_reaction(sent, emoji = '\U0001f44d')
 
 
 bot.add_cog(welcome(bot))

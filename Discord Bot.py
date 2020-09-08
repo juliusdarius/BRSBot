@@ -295,7 +295,8 @@ class Levels(commands.Cog):
             embed.add_field(name='Level', value=user[-2])
             embed.add_field(name='XP', value=user[-1])
             channel = self.bot.get_channel(id=752711588586455110)
-            await channel.send(embed=embed,)
+            sent = await channel.send(embed=embed)
+            await self.bot.add_reaction(sent, emoji = "\U0001F44D")
 
 
 
@@ -319,7 +320,9 @@ class welcome(commands.Cog):
             embed.set_footer(text=f'{member.guild}', icon_url=member.guild.icon_url)
             embed.set_thumbnail(url=f'{member.avatar_url}')
             channel = self.bot.get_channel(id=530206822804750360)
-            await channel.send(embed=embed)
+            sent = await channel.send(embed=embed)
+            await self.bot.add_reaction(sent, emoji = "\U0001F44D")
+
 
 bot.add_cog(welcome(bot))
 bot.add_cog(Levels(bot))

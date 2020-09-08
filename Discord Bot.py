@@ -2,6 +2,7 @@
 import os
 import discord 
 from discord.ext import commands
+from discord.ext.commands import Greedy
 from dotenv import load_dotenv
 import psycopg2
 from psycopg2 import pool
@@ -350,10 +351,34 @@ class kill(commands.Cog):
         death = f'Looks like {member.mention} {random.choice(deaths)}'
         await ctx.send(death)
 
+
+    @commands.command()
+    async def slap(self, ctx, members:Greedy[discord.Member],*,reason = 'no good reason'):
+        slapped = ", ".join(x.name for x in members)
+        await ctx.send('{} just got slapped for {}'.format(slapped, reason))
+
+
+    @commands.command()
+    async def battle(self, ctx, members:Greedy[discord.Member]):
+        if len(members) <= 1:
+            await ctx.send('Listen, you are gonna need more brave contestants than that. Come back with at least 2 people to duke it out.')
+        else:
+            fighters = ", ".join(x.name for x in members)
+            winner = random.choice(members)
+            message = f"""Ladies and Gentlemen, we have {len(members)} brave contestants entering into the ring, and only one can win.
+            \nLooks like they are are all armed with rocks, paper, and scissors.
+            \nAnd it looks like our winner is....{winner.name}!!!
+            \nCongratulations {winner.mention}"""
+            await ctx.send(message)
+
+
     @kill.error
-    async def kill_error(self, ctx, error):
+    @slap.error
+    @battle.error
+    async def member_not_found(self, ctx, error):
         if isinstance(error, commands.BadArgument):
             await ctx.send('I could not find that member..., please use the @ mention system to specify member')
+
 
 
 bot.add_cog(kill(bot))

@@ -300,7 +300,6 @@ class Levels(commands.Cog):
             await sent.add_reaction(emoji = '\U0001f44d')
 
 
-
 class match(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -325,6 +324,34 @@ class welcome(commands.Cog):
             await sent.add_reaction(sent, emoji = '\U0001f44d')
 
 
+class kill(commands.Cog):
+
+    def __init__(self, bot):
+        self.bot = bot
+
+    @commands.command()
+    async def kill_user(self, ctx, member:discord.Member = 340221274431160330):
+        member = member if member == 340221274431160330 else member.id
+        deaths = [
+            'got run over by a car',
+            'had their cheeks clapped',
+            'took a arrow to the knee',
+            'was found on the side of the road, pants down with a sore ass',
+            'tripped and fell down the stairs like an idiot',
+            'forgot to throw the grenade. Dumbass',
+            "angered the robots, so BRSBot ended them with it's laser beams and saw hands"
+        ]
+
+        guild = ctx.guild
+        # print(member)
+        member = guild.get_member(member)
+        # print(member)
+
+        death = f'Looks like {member.mention} {random.choice(deaths)}'
+        await ctx.send(death)
+
+
+bot.add_cog(kill(bot))
 bot.add_cog(welcome(bot))
 bot.add_cog(Levels(bot))
 

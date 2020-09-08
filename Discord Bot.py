@@ -274,7 +274,8 @@ class Levels(commands.Cog):
             cursor.execute("UPDATE level_system SET xp = %s WHERE user_id = %s AND guild_id = %s", (new_xp, author_id, guild_id))
 
         if self.level_up(user):
-            await message.channel.send(f'{message.author.mention} is now level {user[-2]+1}')
+            channel = self.bot.get_channel(id=752711588586455110)
+            await channel.send(f'{message.author.mention} is now level {user[-2]+1}')
         
 
     @commands.command()
@@ -294,9 +295,9 @@ class Levels(commands.Cog):
             embed.set_author(name=f'User - {member}', icon_url=self.bot.user.avatar_url)
             embed.add_field(name='Level', value=user[-2])
             embed.add_field(name='XP', value=user[-1])
-            channel = self.bot.get_channel(id=752711588586455110)
-            sent = await channel.send(embed=embed)
-            await self.bot.add_reaction(sent, emoji = "\U0001F44D")
+            # channel = self.bot.get_channel(id=752711588586455110)
+            sent = await ctx.channel.send(embed=embed)
+            # await self.bot.add_reaction(sent, emoji = '\U0001f44d')
 
 
 
@@ -319,9 +320,9 @@ class welcome(commands.Cog):
             embed.set_author(name=f'New Member {member.name}', icon_url=member.avatar_url)
             embed.set_footer(text=f'{member.guild}', icon_url=member.guild.icon_url)
             embed.set_thumbnail(url=f'{member.avatar_url}')
-            channel = self.bot.get_channel(id=530206822804750360)
+            channel = self.bot.get_channel(id=745331089375101036)
             sent = await channel.send(embed=embed)
-            await self.bot.add_reaction(sent, emoji = "\U0001F44D")
+            await self.bot.add_reaction(sent, emoji = '\U0001f44d')
 
 
 bot.add_cog(welcome(bot))

@@ -350,6 +350,11 @@ class kill(commands.Cog):
         death = f'Looks like {member.mention} {random.choice(deaths)}'
         await ctx.send(death)
 
+    @kill.error
+    async def kill_error(self, ctx, error):
+        if isinstance(error, commands.BadArgument):
+            await ctx.send('I could not find that member..., please use the @ mention system to specify member')
+
 
 bot.add_cog(kill(bot))
 bot.add_cog(welcome(bot))

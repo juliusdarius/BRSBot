@@ -308,7 +308,7 @@ class welcome(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.Cog.listener
+    @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
 
             embed = discord.Embed(color = 0x95efcc,

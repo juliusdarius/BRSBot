@@ -294,7 +294,7 @@ class Levels(commands.Cog):
             embed.set_author(name=f'User - {member}', icon_url=self.bot.user.avatar_url)
             embed.add_field(name='Level', value=user[-2])
             embed.add_field(name='XP', value=user[-1])
-            channel = self.bot.get_channel(id=530206822804750360)
+            channel = self.bot.get_channel(id=752711588586455110)
             await channel.send(embed=embed,)
 
 

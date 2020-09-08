@@ -7,6 +7,7 @@ import psycopg2
 from psycopg2 import pool
 import random
 from contextlib import contextmanager
+import datetime
 
 
 load_dotenv()
@@ -25,31 +26,6 @@ bot = commands.Bot(command_prefix='!')
 last_team = None
 
 team_names = ['Allegiance','Coalition']
-
-# try:
-#     conn = psycopg2.connect(user = USER, password = PASSWORD, host = POSTGRESQL_HOST, port = POSTGRESQL_PORT, database = 'BRSBotDB')
-#     cursor = conn.cursor()
-# except Exception as e:
-#     print(e)
-
-
-# @bot.event
-# async def on_message(message):
-#     if message.author == bot.user:
-#         return
-
-    
-#     author_id = str(message.author.id)
-#     guild_id = str(message.guild.id)
-#     print(message.content,author_id,guild_id)
-
-#     cursor.execute("SELECT * FROM level_system WHERE user_id = %s AND guild_id = %s", (author_id, guild_id))
-#     user = cursor.fetchall()
-#     print(user)
-#     if not user:
-#         cursor.execute("INSERT INTO level_system (user_id,guild_id,level,xp) VALUES (%s,%s,1,0)", (author_id,guild_id))
-    
-#     conn.commit()
 
 
 @bot.command(name = 'server')
@@ -135,6 +111,7 @@ async def team_gen(ctx, *args, last_team = last_team,):
     else:
         return
 
+
 @bot.command(name = 'shuffle_teams')
 async def reshuffle_teams(ctx):
 #TODO: Pull from Scrim team 1 and 2 to get the teamlist for reshuffle
@@ -180,7 +157,6 @@ async def reshuffle_teams(ctx):
             member = guild.get_member(id_)
             if member is not None:
                 await member.move_to(channel)
-
 
 
 @bot.command(name = 'debrief')
@@ -244,7 +220,6 @@ async def send_bunker_map(ctx, *bunker_num):
         await ctx.send(file = discord.File('Bunkers.png'))
 
 
-
 class Levels(commands.Cog):
 
     def __init__(self, bot):
@@ -289,12 +264,12 @@ class Levels(commands.Cog):
         with self.get_cursor() as cursor:
             cursor.execute("SELECT * FROM level_system WHERE user_id = %s AND guild_id = %s", (author_id, guild_id))
             user = cursor.fetchall()
-            # print(user)
+
             if (not user) or (user is None):
                 cursor.execute("INSERT INTO level_system (user_id,guild_id,level,xp) VALUES (%s,%s,1,0)", (author_id,guild_id))
+
             cursor.execute("SELECT * FROM level_system WHERE user_id = %s AND guild_id = %s", (author_id, guild_id))
             user = cursor.fetchone()
-            # print(user)
             new_xp = user[-1]+1
             cursor.execute("UPDATE level_system SET xp = %s WHERE user_id = %s AND guild_id = %s", (new_xp, author_id, guild_id))
 
@@ -303,7 +278,7 @@ class Levels(commands.Cog):
         
 
     @commands.command()
-    async def level(self,ctx,member: discord.Member = None):
+    async def level(self, ctx, member: discord.Member = None):
         member = ctx.author if not member else member
         member_id = str(member.id)
         guild_id = str(ctx.guild.id)
@@ -319,9 +294,34 @@ class Levels(commands.Cog):
             embed.set_author(name=f'User - {member}', icon_url=self.bot.user.avatar_url)
             embed.add_field(name='Level', value=user[-2])
             embed.add_field(name='XP', value=user[-1])
-            await ctx.send(embed=embed)
+            channel = self.bot.get_channel(id=530206822804750360)
+            await channel.send(embed=embed,)
 
 
+
+class match(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+
+
+class welcome(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+
+    @commands.Cog.listener
+    async def on_member_join(self, member: discord.Member):
+
+            embed = discord.Embed(color = 0x95efcc,
+                description=f'Welcome to the Bolt Rifle Squad/iONEi Discord server!\nYou are member number: {len(list(member.guild.members))}\nMake sure to enjoy your stay and check out our Call of Duty World at War Server with the !server command!',
+                timestamp=datetime.datetime.utcnow()
+            )
+            embed.set_author(name=f'New Member {member.name}', icon_url=member.avatar_url)
+            embed.set_footer(text=f'{member.guild}', icon_url=member.guild.icon_url)
+            embed.set_thumbnail(url=f'{member.avatar_url}')
+            channel = self.bot.get_channel(id=530206822804750360)
+            await channel.send(embed=embed)
+
+bot.add_cog(welcome(bot))
 bot.add_cog(Levels(bot))
 
 bot.run(TOKEN)

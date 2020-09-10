@@ -41,12 +41,6 @@ async def on_ready():
     await bot.change_presence(activity=discord.Game(name='Searching for Pip'))
 
 
-@bot.event
-async def on_member_join(member):
-    await member.create_dm()
-    await member.dm_channel.send(f'Hi {member.name}, welcome to PALS 4 LIFE! Please enjoy your stay!')
-
-
 @bot.command(name = 'teamgen')
 async def team_gen(ctx, *args, last_team = last_team,):
 #TODO: Get the current list of members in the CoD voice server and then move only the members of that channel
@@ -301,6 +295,68 @@ class Levels(commands.Cog):
             await sent.add_reaction(emoji = '\U0001f44d')
 
 
+    @commands.command()
+    async def leaderboard(self, ctx, members:Greedy[discord.Member]=None, how = 'me'):
+        guild = ctx.guild
+        guild_id = str(ctx.guild.id)
+        place_msgs = []
+
+        if how == 'me':
+            members = ctx.author if not members else members
+
+            if type(members) == discord.Member:
+                members_id = [str(members.id)]
+            else:
+                members_id = [str(x.id) for x in members]
+
+            with self.get_cursor() as cursor:
+                cursor.execute("SELECT * FROM level_system")
+                all_users = cursor.fetchall()
+                all_users = sorted(all_users, key= lambda x: x[-1], reverse = True)
+
+                for member_id in members_id:
+                    cursor.execute("SELECT * FROM level_system WHERE user_id = %s AND guild_id = %s", (member_id, guild_id))
+                    user = cursor.fetchone()
+
+                    if (not user) or (user is None):
+                        await ctx.send('Member does not have a level in the database')
+                        continue
+
+                    idx = next(i for i, t in enumerate(all_users) if (t[0] == member_id) & (t[1] == guild_id))
+                    idx += 1
+
+                    if guild.get_member(int(member_id)).nick is not None:
+                        name = guild.get_member(int(member_id)).nick
+                    else:
+                        name = guild.get_member(int(member_id)).name
+
+                    msg = f'{name} is ranked {idx} on the leveling leaderboard at level {user[-2]} with {user[-1]} XP'
+                    place_msgs.append(msg)
+
+                final_message = '\n'.join(place_msgs)
+                await ctx.send(final_message)
+
+        elif how == 'all':
+            with self.get_cursor() as cursor:
+                cursor.execute("SELECT * FROM level_system")
+                all_users = cursor.fetchall()
+
+            all_users = sorted(all_users, key= lambda x: x[-1], reverse = True)
+
+            for idx, user in enumerate(all_users, start = 0):
+                
+                if guild.get_member(int(user[0])).nick is not None:
+                    name = guild.get_member(int(user[0])).nick
+                else:
+                    name = guild.get_member(int(user[0])).name
+                # print(name, idx)
+                msg = f'{name} is ranked {idx} on the leveling leaderboard at level {user[-2]} with {user[1]} xp'
+                place_msgs.append(msg)
+
+            final_message = '\n'.join(place_msgs)
+            await ctx.send(final_message)
+
+
 class match(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -313,16 +369,19 @@ class welcome(commands.Cog):
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
 
-            embed = discord.Embed(color = 0x95efcc,
-                description=f'Welcome to the Bolt Rifle Squad/iONEi Discord server!\nYou are member number: {len(list(member.guild.members))}\nMake sure to enjoy your stay and check out our Call of Duty World at War Server with the !server command!',
-                timestamp=datetime.datetime.utcnow()
-            )
-            embed.set_author(name=f'New Member {member.name}', icon_url=member.avatar_url)
-            embed.set_footer(text=f'{member.guild}', icon_url=member.guild.icon_url)
-            embed.set_thumbnail(url=f'{member.avatar_url}')
-            channel = self.bot.get_channel(id=745331089375101036)
-            sent = await channel.send(embed=embed)
-            await sent.add_reaction(sent, emoji = '\U0001f44d')
+        embed = discord.Embed(color = 0x95efcc,
+            description=f'Welcome to the Bolt Rifle Squad/iONEi Discord server!\nYou are member number: {len(list(member.guild.members))}\nMake sure to enjoy your stay and check out our Call of Duty World at War Server with the !server command!',
+            timestamp=datetime.datetime.utcnow()
+        )
+        embed.set_author(name=f'New Member {member.name}', icon_url=member.avatar_url)
+        embed.set_footer(text=f'{member.guild}', icon_url=member.guild.icon_url)
+        embed.set_thumbnail(url=f'{member.avatar_url}')
+        channel = self.bot.get_channel(id=745331089375101036)
+        sent = await channel.send(embed=embed)
+        await sent.add_reaction(sent, emoji = '\U0001f44d')
+
+        await member.create_dm()
+        await member.dm_channel.send(f'Hi {member.name}, welcome to PALS 4 LIFE! Please enjoy your stay!')
 
 
 class kill(commands.Cog):

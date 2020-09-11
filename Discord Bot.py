@@ -350,7 +350,7 @@ class Levels(commands.Cog):
                 else:
                     name = guild.get_member(int(user[0])).name
                 # print(name, idx)
-                msg = f'{name} is ranked {idx} on the leveling leaderboard at level {user[-2]} with {user[1]} xp'
+                msg = f'{name} is ranked {idx} on the leveling leaderboard at level {user[-2]} with {user[-1]} xp'
                 place_msgs.append(msg)
 
             final_message = '\n'.join(place_msgs)

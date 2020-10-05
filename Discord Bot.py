@@ -9,6 +9,8 @@ from psycopg2 import pool
 import random
 from contextlib import contextmanager
 import datetime
+import asyncio
+from typing import Union
 
 
 load_dotenv()
@@ -349,7 +351,7 @@ class Levels(commands.Cog):
                     name = guild.get_member(int(user[0])).nick
                 else:
                     name = guild.get_member(int(user[0])).name
-                    
+
                 idx += 1
                 msg = f'{name} is ranked {idx} on the leveling leaderboard at level {user[-2]} with {user[-1]} xp'
                 place_msgs.append(msg)
@@ -358,9 +360,131 @@ class Levels(commands.Cog):
             await ctx.send(final_message)
 
 
-class match(commands.Cog):
+class matches(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.team1 = None
+        self.team2 = None
+        self.team1_aliases = []
+        self.team2_aliases = []
+
+    @commands.command()
+    async def set_teams(self, ctx, display_teams = None):
+        guild = ctx.guild
+
+        if display_teams is not None:
+            if (self.team1 is None) or (self.team2 is None):
+                await ctx.send('Teams have not been set. Please type !set_teams and follow prompts to set voice channel teams to log data from')
+                return
+            else:
+                await ctx.send(f'Channels chosen for teams are set as:\n-Team 1: {guild.get_channel(self.team1).name}\n-Team 2: {guild.get_channel(self.team2).name}')
+                return
+
+        voice_channels = [x.name for x in guild.voice_channels]
+
+        vc_dict = {}
+        for i, vc in enumerate(voice_channels):
+            vc_dict[str(i)] = vc
+        
+        vc_msg = [f'{k} : {v}' for k,v in vc_dict.items()]
+        await ctx.send('Please enter the numbers for the channels that you want to set as the team channels with a comma serperating them e.g. 1,7 from the list below:\n\n' +'\n'.join(vc_msg) + '\n\nType "Cancel" to cancel')
+
+        try:
+            def check(m):
+                return m.author == ctx.author
+
+            msg = await self.bot.wait_for('message', check = check, timeout = 60.0)
+        except asyncio.TimeoutError:
+            await ctx.send('Team set timed out. You have 60 seconds to respond. Please type !set_teams if you would like to try again')
+            return
+        else:
+            if msg.content.lower() == 'cancel':
+                await ctx.send('Team setup canceled')
+                return
+
+            split_msg = msg.content.split(',')
+
+            if len(split_msg) != 2:
+                ctx.send('Please enter 2 channel numbers, seperated by a comma. e.g. 1,7')
+                return
+            
+            team1, team2 = split_msg
+            team1_id = discord.utils.get(guild.voice_channels, name = vc_dict[team1])
+            team2_id = discord.utils.get(guild.voice_channels, name = vc_dict[team2])
+            team1_id, team2_id = team1_id.id, team2_id.id
+            self.team1, self.team2 = team1_id, team2_id
+            await ctx.send(f'Channels chosen for teams are:\n-Team 1: {guild.get_channel(self.team1).name}\n-Team 2: {guild.get_channel(self.team2).name}')
+
+
+    #TODO: Make logic for updating and deleting from the alias lists
+    @commands.command()
+    async def team_alias(self, ctx, method:str=None):
+        guild = ctx.guild
+        allowed_methods = ['update', 'delete', 'new']
+        emojis = ['1️⃣', '2️⃣']
+        emoji_dict = {emojis[0]:self.team1, emojis[1]:self.team2}
+        emoji_alias_dict = {emojis[0]:self.team1_aliases, emojis[1]:self.team2_aliases}
+
+        def msg_check(m):
+            return m.author == ctx.author
+
+        def reaction_check(reaction, user):
+            return user == ctx.author and reaction.emoji in emojis
+        
+        if method is None:
+            await ctx.send(f'Please specifiy one of the following when using the command to set the team alias: {", ".join(allowed_methods)}. This will indicate whether to start fresh, update the current alias list, or delete an alias from a list.')
+            return
+        elif method.lower() not in allowed_methods:
+            await ctx.send(f'The allowable methods are {", ".join(allowed_methods)}')
+            return
+        
+        if self.team1 is None or self.team2 is None:
+            await ctx.send(f'Please setup teams before setting team aliases by using the !set_teams command')
+            return
+
+
+        sent = await ctx.send(f'-Team 1: {guild.get_channel(self.team1).name}\n-Team 2: {guild.get_channel(self.team2).name}\nReact with the number emoji corresponding to the team you want to make changes to.')
+        for emoji in emojis:
+            await sent.add_reaction(emoji)
+
+        try:
+            reaction, user = await self.bot.wait_for('reaction_add', check = reaction_check, timeout = 30.0)
+        except asyncio.TimeoutError:
+            await ctx.send('Please react with one of the preset reacts')
+            return
+        else:
+            await ctx.send(f'Thank you for reacting {reaction.emoji}')
+            
+        if method.lower() == 'new':
+            try:
+                await ctx.send('Please type the aliases to be used. Seperate names with a comma. Alias can be only 1 word. e.g. blue,blueteam,brs')
+                msg = await self.bot.wait_for('message', check = msg_check, timeout = 120.0)
+            except asyncio.TimeoutError:
+                await ctx.send('Team set timed out. You have 60 seconds to respond. Please type !team_alias new if you would like to try again')
+                return
+            aliases = msg.content.split(',')
+
+            await ctx.send(f'Team alias(es) for {guild.get_channel(emoji_dict[reaction.emoji]).name} will be set as {", ".join(aliases)}')
+            emoji_alias_dict[reaction.emoji].extend(aliases)
+            print(emoji_alias_dict[reaction.emoji])
+        elif method.lower() == 'update':
+            pass
+        elif method.lower() == 'delete':
+            pass
+        else:
+            await ctx.send('No action done to team alias')
+            return
+
+            
+    @commands.command()
+    async def scrimwin(self, ctx, type:Union[str,Greedy[discord.Member]]=None, winscore:str=None, gametype:str=None):
+        pass
+
+
+    #TODO: Can pass members, follow channel prompt to pull memembers names, or just use the msg author
+    @commands.command()
+    async def wzwin(self, ctx, members:Greedy[discord.Member] = None, channel:str=None):
+        pass
 
 
 class welcome(commands.Cog):
@@ -374,23 +498,27 @@ class welcome(commands.Cog):
             description=f'Welcome to the Bolt Rifle Squad/iONEi Discord server!\nYou are member number: {len(list(member.guild.members))}\nMake sure to enjoy your stay and check out our Call of Duty World at War Server with the !server command!',
             timestamp=datetime.datetime.utcnow()
         )
-        embed.set_author(name=f'New Member {member.name}', icon_url=member.avatar_url)
+        embed.set_author(name=f'New Member: {member.name}', icon_url=member.avatar_url)
         embed.set_footer(text=f'{member.guild}', icon_url=member.guild.icon_url)
         embed.set_thumbnail(url=f'{member.avatar_url}')
         channel = self.bot.get_channel(id=745331089375101036)
         sent = await channel.send(embed=embed)
-        await sent.add_reaction(sent, emoji = '\U0001f44d')
+        await sent.add_reaction(emoji = '👋')
+        await channel.send(f'{member.mention} check out {self.bot.get_channel(id=530206822804750360).mention} to introduce yourself and make yourself at home!')
 
         await member.create_dm()
-        await member.dm_channel.send(f'Hi {member.name}, welcome to PALS 4 LIFE! Please enjoy your stay!')
+        await member.dm_channel.send(f'Hi {member.name}, welcome to {member.guild}! Please enjoy your stay!')
 
 
-class kill(commands.Cog):
+class battleground(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
-
-    @commands.command()
+        self._original_help_command = bot.help_command
+        bot.help_command = HelpCommand()
+        bot.help_command.cog = self
+        
+    @commands.command(help = 'Kill selected members with a random death, can be one member or multiple')
     async def kill(self, ctx, member:discord.Member = 340221274431160330):
         member = member if member == 340221274431160330 else member.id
         deaths = [
@@ -404,15 +532,13 @@ class kill(commands.Cog):
         ]
 
         guild = ctx.guild
-        # print(member)
         member = guild.get_member(member)
-        # print(member)
 
         death = f'Looks like {member.mention} {random.choice(deaths)}'
         await ctx.send(death)
 
 
-    @commands.command()
+    @commands.command(help = 'Slap a member(s)')
     async def slap(self, ctx, members:Greedy[discord.Member],*,reason = 'no good reason'):
         slapped = ", ".join(x.name for x in members)
         await ctx.send('{} just got slapped for {}'.format(slapped, reason))
@@ -440,8 +566,14 @@ class kill(commands.Cog):
             await ctx.send('I could not find that member..., please use the @ mention system to specify member')
 
 
+class HelpCommand(commands.HelpCommand):
 
-bot.add_cog(kill(bot))
+    async def send_command_help(self, command):
+        await self.get_destination().send(command.help)
+
+
+bot.add_cog(matches(bot))
+bot.add_cog(battleground(bot))
 bot.add_cog(welcome(bot))
 bot.add_cog(Levels(bot))
 

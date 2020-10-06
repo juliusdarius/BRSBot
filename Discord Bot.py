@@ -477,7 +477,7 @@ class matches(commands.Cog):
 
             
     @commands.command()
-    async def scrimwin(self, ctx, type:Union[str,Greedy[discord.Member]]=None, winscore:str=None, gametype:str=None):
+    async def scrimwin(self, ctx, type:Union[str,discord.Member]=None, winscore:str=None, gametype:str=None):
         pass
 
 

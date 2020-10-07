@@ -194,7 +194,7 @@ async def test(ctx):
     await ctx.send('Yea yea, I hear you')
 
 
-@bot.command(name = 'bunkers', aliases = ['bunker','bunkers'])
+@bot.command(name = 'bunkers', aliases = ['bunker'])
 async def send_bunker_map(ctx, *bunker_num):
 
     codes_dict = {

@@ -203,13 +203,17 @@ async def send_bunker_map(ctx, *bunker_num):
         'B5':'87624851',
         'H8':'72948531',
         'F4':'27495810',
-        'F8':'60274513'
+        'F8':'60274513',
+        'RED':'red_access_locations.jpg'
     }
 
     if bunker_num:
         bunker_num = bunker_num[0]
         if bunker_num.upper() in codes_dict:
-            await ctx.send(f'The bunker code for grid mark {bunker_num.upper()} is {codes_dict.get(bunker_num.upper())}')
+            if bunker_num.upper() != 'RED':
+                await ctx.send(f'The bunker code for grid mark {bunker_num.upper()} is {codes_dict.get(bunker_num.upper())}')
+            else:
+                await ctx.send(file = discord.File(codes_dict.get(bunker_num.upper())))
         else:
             valid_codes = "\n".join(["- " + code for code in codes_dict.keys()])
             await ctx.send(f'The acceptable grid mark locations are\n{valid_codes}')
